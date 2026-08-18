@@ -29,7 +29,7 @@ export default function ProductsPage() {
   const [filters, setFilters] = useState<ProductFilters>({
     search: searchParams.get('search') || '',
     category_id: '',
-    brand_id: '',
+    brand_id: searchParams.get('brand_id') || '',
     min_price: undefined,
     max_price: undefined,
     in_stock: false,
@@ -47,11 +47,12 @@ export default function ProductsPage() {
   useEffect(() => {
     const catSlug = searchParams.get('category');
     const brandSlug = searchParams.get('brand');
+    const brandId = searchParams.get('brand_id');
     setFilters(f => ({
       ...f,
-      search: searchParams.get('search') || f.search,
-      category_id: catSlug ? (categories.find(c => c.slug === catSlug)?.id || '') : f.category_id,
-      brand_id: brandSlug ? (brands.find(b => b.slug === brandSlug)?.id || '') : f.brand_id,
+      search: searchParams.get('search') || '',
+      category_id: catSlug ? (categories.find(c => c.slug === catSlug)?.id || '') : '',
+      brand_id: brandId || (brandSlug ? (brands.find(b => b.slug === brandSlug)?.id || '') : ''),
     }));
     setPage(1);
   }, [searchParams, categories, brands]);

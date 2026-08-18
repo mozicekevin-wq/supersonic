@@ -3,31 +3,16 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, ShoppingBag, Tag, Zap, Phone, MapPin, ChevronRight, ChevronLeft } from 'lucide-react';
 import { getFeaturedProducts, getNewProducts } from '@/services/products';
 import { getActivePromotions } from '@/services/promotions';
-import { getCategories } from '@/services/categories';
+import { getCategories, getBrands } from '@/services/categories';
 import { getPublishedPublications } from '@/services/publications';
 import { getStores } from '@/services/admin';
 import ProductCard from '@/components/products/ProductCard';
 import ProductCardSkeleton from '@/components/products/ProductCardSkeleton';
 import { formatPrice, formatDate } from '@/lib/utils';
-import type { Product, Promotion, Category, Publication, Store } from '@/types/types';
+import type { Product, Promotion, Category, Brand, Publication, Store } from '@/types/types';
 
 const STORE_IMG = 'https://miaoda-site-img.s3cdn.medo.dev/images/KLing_b51f9e08-8c1a-49da-81e6-ba034eb634b0.jpg';
 
-const BRAND_LOGO_LINKS = [
-  { name: 'Apple', slug: 'apple', className: 'left-0 top-0' },
-  { name: 'Dell', slug: 'dell', className: 'left-1/4 top-0' },
-  { name: 'Epson', slug: 'epson', className: 'left-1/2 top-0' },
-  { name: 'Hisense', slug: 'hisense', className: 'left-3/4 top-0' },
-  { name: 'HP', slug: 'hp', className: 'left-0 top-1/4' },
-  { name: 'Lenovo', slug: 'lenovo', className: 'left-1/4 top-1/4' },
-  { name: 'LG', slug: 'lg', className: 'left-1/2 top-1/4' },
-  { name: 'Samsung', slug: 'samsung', className: 'left-3/4 top-1/4' },
-  { name: 'Sony', slug: 'sony', className: 'left-0 top-1/2' },
-  { name: 'Samsung', slug: 'samsung', className: 'left-1/4 top-1/2' },
-  { name: 'Westpool', slug: 'westpool', className: 'left-1/2 top-1/2' },
-  { name: 'Sharp', slug: 'sharp', className: 'left-3/4 top-1/2' },
-  { name: 'Canon', slug: 'canon', className: 'left-1/4 top-3/4' },
-] as const;
 
 // Hero slider slides
 const HERO_SLIDES = [
@@ -64,6 +49,7 @@ export default function HomePage() {
   const [newProducts, setNewProducts] = useState<Product[]>([]);
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
   const [publications, setPublications] = useState<Publication[]>([]);
   const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
@@ -98,11 +84,12 @@ export default function HomePage() {
       getNewProducts(8),
       getActivePromotions(4),
       getCategories(),
+      getBrands(),
       getPublishedPublications(3),
       getStores(),
-    ]).then(([feat, newP, promos, cats, pubs, strs]) => {
+    ]).then(([feat, newP, promos, cats, brnds, pubs, strs]) => {
       setFeatured(feat); setNewProducts(newP); setPromotions(promos);
-      setCategories(cats);
+      setCategories(cats); setBrands(brnds);
       setPublications(pubs.data); setStores(strs);
     }).catch(console.error).finally(() => setLoading(false));
   }, []);
@@ -335,24 +322,22 @@ export default function HomePage() {
             <div className="section-subtitle mb-2">Nos partenaires</div>
             <h2 className="section-title">Marques disponibles</h2>
           </div>
-          <div className="neu-flat rounded-3xl p-4 sm:p-8 overflow-hidden">
-            <div className="relative aspect-[3/2] w-full">
-              <img
-                src="/supersonic/brand-logos-clean.png"
-                alt="Logos partenaires : Apple, Dell, Epson, Hisense, HP, Lenovo, LG, Samsung, Sony, Westpool, Sharp et Canon"
-                className="absolute inset-0 h-full w-full object-contain"
-                loading="lazy"
-              />
-              {BRAND_LOGO_LINKS.map((brand, index) => (
-                <Link
-                  key={`${brand.slug}-${index}`}
-                  to={`/products?brand=${brand.slug}`}
-                  aria-label={`Voir les produits ${brand.name}`}
-                  title={`Voir les produits ${brand.name}`}
-                  className={`absolute h-1/4 w-1/4 rounded-2xl transition-all duration-200 hover:bg-primary/10 hover:ring-2 hover:ring-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${brand.className}`}
-                />
-              ))}
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 max-w-5xl mx-auto">
+            {brands.map(brand => (
+              <Link
+                key={brand.id}
+                to={`/products?brand_id=${encodeURIComponent(brand.id)}`}
+                aria-label={`Voir uniquement les produits ${brand.name}`}
+                title={`Voir uniquement les produits ${brand.name}`}
+                className="neu-flat min-h-24 md:min-h-28 rounded-2xl px-6 py-5 flex items-center justify-center hover:-translate-y-1 hover:ring-2 hover:ring-primary/30 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                {brand.logo_url ? (
+                  <img src={brand.logo_url} alt={brand.name} className="max-h-12 max-w-[78%] object-contain" loading="lazy" />
+                ) : (
+                  <span className="text-xl md:text-2xl font-semibold text-foreground text-center">{brand.name}</span>
+                )}
+              </Link>
+            ))}
           </div>
         </div>
       </section>
