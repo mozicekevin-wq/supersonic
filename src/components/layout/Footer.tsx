@@ -1,5 +1,6 @@
-import { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { getSettings } from '@/services/admin';
 import { Phone, Mail, MapPin, Facebook, Instagram, Youtube, Clock } from 'lucide-react';
 import WhatsAppLogo from '@/components/common/WhatsAppLogo';
 
@@ -10,6 +11,19 @@ export default function Footer() {
   const navigate = useNavigate();
   const clickCountRef = useRef(0);
   const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [socialLinks, setSocialLinks] = useState({ facebook: '', instagram: '', youtube: '' });
+
+  useEffect(() => {
+    getSettings().then(settings => {
+      setSocialLinks({
+        facebook: settings.facebook_url || '',
+        instagram: settings.instagram_url || '',
+        youtube: settings.youtube_url || '',
+      });
+    }).catch(() => {
+      // Les liens sociaux restent masqués si les paramètres ne sont pas disponibles.
+    });
+  }, []);
 
   // Triple-click on logo → navigate to admin login
   const handleLogoClick = () => {
@@ -58,18 +72,27 @@ export default function Footer() {
             Votre partenaire de confiance pour l'électronique, l'électroménager et l'informatique au Congo.
           </p>
           <div className="flex gap-3">
-            <a href="https://facebook.com" target="_blank" rel="noreferrer"
-              className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-accent transition-colors">
-              <Facebook className="w-4 h-4" />
-            </a>
-            <a href="https://instagram.com" target="_blank" rel="noreferrer"
-              className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-accent transition-colors">
-              <Instagram className="w-4 h-4" />
-            </a>
-            <a href="https://youtube.com" target="_blank" rel="noreferrer"
-              className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-accent transition-colors">
-              <Youtube className="w-4 h-4" />
-            </a>
+            {socialLinks.facebook && (
+              <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer"
+                aria-label="Facebook Supersonic" title="Facebook Supersonic"
+                className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-accent transition-colors">
+                <Facebook className="w-4 h-4" />
+              </a>
+            )}
+            {socialLinks.instagram && (
+              <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer"
+                aria-label="Instagram Supersonic" title="Instagram Supersonic"
+                className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-accent transition-colors">
+                <Instagram className="w-4 h-4" />
+              </a>
+            )}
+            {socialLinks.youtube && (
+              <a href={socialLinks.youtube} target="_blank" rel="noopener noreferrer"
+                aria-label="YouTube Supersonic" title="YouTube Supersonic"
+                className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-accent transition-colors">
+                <Youtube className="w-4 h-4" />
+              </a>
+            )}
           </div>
         </div>
 
