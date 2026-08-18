@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, Loader2, Upload, Image as ImageIcon, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, Upload, Image as ImageIcon, Search, Images } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { getCategories, createCategory, updateCategory, deleteCategory, getBrands, createBrand, updateBrand, deleteBrand, uploadBrandLogo } from '@/services/categories';
+import { getCategories, createCategory, updateCategory, deleteCategory, getBrands, createBrand, updateBrand, deleteBrand, uploadBrandGalleryImage, listBrandGallery } from '@/services/categories';
 import { slugify } from '@/lib/utils';
 import type { Category, Brand } from '@/types/types';
 
@@ -20,6 +20,10 @@ export default function AdminCategoriesPage() {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState('');
   const [brandSearch, setBrandSearch] = useState('');
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryImages, setGalleryImages] = useState<string[]>([]);
+  const [galleryLoading, setGalleryLoading] = useState(false);
+  const [selectedGalleryLogo, setSelectedGalleryLogo] = useState('');
 
   const load = async () => {
     setLoading(true);
@@ -32,7 +36,25 @@ export default function AdminCategoriesPage() {
 
   useEffect(() => { load(); }, []);
 
-  const resetLogo = () => { setLogoFile(null); setLogoPreview(''); };
+  const resetLogo = () => { setLogoFile(null); setLogoPreview(''); setSelectedGalleryLogo(''); };
+  const openGallery = async () => {
+    setGalleryOpen(true);
+    setGalleryLoading(true);
+    try {
+      setGalleryImages(await listBrandGallery());
+    } catch (e: any) {
+      toast.error(e?.message || 'Impossible de charger la galerie');
+    } finally {
+      setGalleryLoading(false);
+    }
+  };
+  const selectGalleryLogo = (url: string) => {
+    setSelectedGalleryLogo(url);
+    setLogoFile(null);
+    setLogoPreview(url);
+    setForm(f => ({ ...f, logoUrl: url }));
+    setGalleryOpen(false);
+  };
   const openCreate = () => {
     setEditItem(null);
     setForm({ name: '', description: '', slug: '', logoUrl: '' });
@@ -52,6 +74,8 @@ export default function AdminCategoriesPage() {
     if (!file.type.startsWith('image/')) { toast.error('Sélectionnez une image'); return; }
     if (file.size > 5 * 1024 * 1024) { toast.error('L’image doit faire moins de 5 Mo'); return; }
     setLogoFile(file);
+    setSelectedGalleryLogo('');
+    setForm(f => ({ ...f, logoUrl: '' }));
     setLogoPreview(URL.createObjectURL(file));
   };
 
@@ -66,19 +90,19 @@ export default function AdminCategoriesPage() {
       } else {
         const conflictingBrand = brands.find(b => b.id !== editItem?.id && (b.name.trim().toLowerCase() === data.name.toLowerCase() || b.slug === data.slug));
         if (conflictingBrand) {
-          if (!logoFile) {
-            toast.error(`La marque « ${conflictingBrand.name} » existe déjà. Ouvrez-la avec Modifier pour mettre son logo à jour.`);
+          if (!logoFile && !selectedGalleryLogo) {
+            toast.error(`La marque « ${conflictingBrand.name} » existe déjà. Choisissez une image du téléphone ou de la galerie du site.`);
             return;
           }
-          const logoUrl = await uploadBrandLogo(logoFile, conflictingBrand.id);
+          const logoUrl = logoFile ? await uploadBrandGalleryImage(logoFile) : selectedGalleryLogo;
           await updateBrand(conflictingBrand.id, { logo_url: logoUrl });
           toast.success(`Logo de ${conflictingBrand.name} mis à jour`);
         } else {
           const savedBrand = editItem
             ? (await updateBrand(editItem.id, data), editItem as Brand)
             : await createBrand(data);
-          if (logoFile) {
-            const logoUrl = await uploadBrandLogo(logoFile, savedBrand.id);
+          if (logoFile || selectedGalleryLogo) {
+            const logoUrl = logoFile ? await uploadBrandGalleryImage(logoFile) : selectedGalleryLogo;
             await updateBrand(savedBrand.id, { logo_url: logoUrl });
           }
           toast.success(editItem ? 'Marque mise à jour' : 'Marque créée');
@@ -213,11 +237,14 @@ export default function AdminCategoriesPage() {
                   </div>
                   <label className="neu-btn flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
                     <Upload className="w-4 h-4" />
-                    {logoFile ? 'Changer l’image' : 'Ajouter une image'}
+                    {logoFile ? 'Changer l’image' : 'Depuis le téléphone'}
                     <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="sr-only" onChange={e => handleLogoChange(e.target.files?.[0])} />
                   </label>
+                  <button type="button" onClick={openGallery} className="neu-btn flex items-center gap-2 px-3 py-2 text-sm">
+                    <Images className="w-4 h-4" /> Galerie du site
+                  </button>
                 </div>
-                <p className="text-[11px] text-muted-foreground mt-1">PNG, JPG, WEBP ou SVG, 5 Mo maximum. Le logo apparaîtra sur le bouton public.</p>
+                <p className="text-[11px] text-muted-foreground mt-1">Choisissez une image du téléphone ou réutilisez une image déjà hébergée dans la galerie du site.</p>
               </div>
             )}
           </div>
@@ -227,6 +254,36 @@ export default function AdminCategoriesPage() {
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
               {editItem ? 'Mettre à jour' : 'Créer'}
             </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={galleryOpen} onOpenChange={setGalleryOpen}>
+        <DialogContent className="max-w-[calc(100%-2rem)] md:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Galerie des images de marques</DialogTitle>
+          </DialogHeader>
+          {galleryLoading ? (
+            <div className="py-12 text-center text-sm text-muted-foreground">Chargement de la galerie...</div>
+          ) : galleryImages.length === 0 ? (
+            <div className="py-12 text-center text-sm text-muted-foreground">Aucune image dans la galerie du site.</div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-[60vh] overflow-y-auto p-1">
+              {galleryImages.map(url => (
+                <button
+                  key={url}
+                  type="button"
+                  onClick={() => selectGalleryLogo(url)}
+                  className="neu-card rounded-xl p-3 h-28 flex items-center justify-center hover:ring-2 hover:ring-primary/50 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  title="Utiliser ce logo"
+                >
+                  <img src={url} alt="Logo de marque disponible" className="max-w-full max-h-full object-contain" />
+                </button>
+              ))}
+            </div>
+          )}
+          <DialogFooter>
+            <button type="button" onClick={() => setGalleryOpen(false)} className="neu-btn px-4 py-2 text-sm">Fermer</button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
