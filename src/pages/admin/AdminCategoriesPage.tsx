@@ -63,17 +63,37 @@ export default function AdminCategoriesPage() {
         if (editItem) await updateCategory(editItem.id, data);
         else await createCategory(data);
       } else {
-        const savedBrand = editItem
-          ? (await updateBrand(editItem.id, data), editItem as Brand)
-          : await createBrand(data);
-        if (logoFile) {
-          const logoUrl = await uploadBrandLogo(logoFile, savedBrand.id);
-          await updateBrand(savedBrand.id, { logo_url: logoUrl });
+        const existingBrand = !editItem
+          ? brands.find(b => b.name.trim().toLowerCase() === data.name.trim().toLowerCase() || b.slug === data.slug)
+          : null;
+
+        if (existingBrand) {
+          if (!logoFile) {
+            toast.error(`La marque « ${existingBrand.name} » existe déjà. Choisissez une image pour mettre son logo à jour.`);
+            return;
+          }
+          const logoUrl = await uploadBrandLogo(logoFile, existingBrand.id);
+          await updateBrand(existingBrand.id, { logo_url: logoUrl, description: data.description });
+          toast.success(`Logo de ${existingBrand.name} mis à jour`);
+        } else {
+          const savedBrand = editItem
+            ? (await updateBrand(editItem.id, data), editItem as Brand)
+            : await createBrand(data);
+          if (logoFile) {
+            const logoUrl = await uploadBrandLogo(logoFile, savedBrand.id);
+            await updateBrand(savedBrand.id, { logo_url: logoUrl });
+          }
+          toast.success(editItem ? 'Marque mise à jour' : 'Marque créée');
         }
       }
-      toast.success(editItem ? 'Marque mise à jour' : 'Marque créée');
+      if (tab === 'categories') toast.success(editItem ? 'Catégorie mise à jour' : 'Catégorie créée');
       setDialogOpen(false); load();
-    } catch (e: any) { toast.error(e.message || 'Erreur'); }
+    } catch (e: any) {
+      const message = String(e?.message || '');
+      toast.error(message.includes('brands_name_key') || message.toLowerCase().includes('duplicate key')
+        ? 'Cette marque existe déjà. Ouvrez-la avec Modifier pour ajouter ou remplacer son logo.'
+        : (message || 'Erreur'));
+    }
     finally { setSaving(false); }
   };
 
