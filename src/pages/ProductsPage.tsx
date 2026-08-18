@@ -211,8 +211,12 @@ export default function ProductsPage() {
                 products.length === 0 ? (
                   <div className="col-span-full text-center py-16">
                     <div className="text-4xl mb-4">🔍</div>
-                    <h3 className="text-lg font-semibold mb-2">Aucun produit trouvé</h3>
-                    <p className="text-muted-foreground text-sm mb-4">Essayez de modifier vos filtres</p>
+                    <h3 className="text-lg font-semibold mb-2">
+                      {selectedBrand ? `Aucun produit ${selectedBrand.name} disponible` : 'Aucun produit trouvé'}
+                    </h3>
+                    <p className="text-muted-foreground text-sm mb-4">
+                      {selectedBrand ? `Cette marque ne possède pas encore de produit publié sur le site.` : 'Essayez de modifier vos filtres'}
+                    </p>
                     <button onClick={clearFilters} className="neu-btn-primary px-5 py-2.5 text-sm">Effacer les filtres</button>
                   </div>
                 ) : products.map(p => <ProductCard key={p.id} product={p} />)
