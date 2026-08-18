@@ -13,6 +13,19 @@ import type { Product, Promotion, Category, Brand, Publication, Store } from '@/
 
 const STORE_IMG = 'https://miaoda-site-img.s3cdn.medo.dev/images/KLing_b51f9e08-8c1a-49da-81e6-ba034eb634b0.jpg';
 
+const BRAND_LOGO_PATHS: Record<string, string> = {
+  samsung: '/supersonic/brands/samsung.svg',
+  lg: '/supersonic/brands/lg.svg',
+  sony: '/supersonic/brands/sony.svg',
+  hp: '/supersonic/brands/hp.svg',
+  dell: '/supersonic/brands/dell.svg',
+  apple: '/supersonic/brands/apple.svg',
+  hisense: '/supersonic/brands/hisense.svg',
+  tefal: '/supersonic/brands/tefal.svg',
+  philips: '/supersonic/brands/philips.svg',
+  huawei: '/supersonic/brands/huawei.svg',
+};
+
 
 // Hero slider slides
 const HERO_SLIDES = [
@@ -331,8 +344,8 @@ export default function HomePage() {
                 title={`Voir uniquement les produits ${brand.name}`}
                 className="neu-flat min-h-24 md:min-h-28 rounded-2xl px-6 py-5 flex items-center justify-center hover:-translate-y-1 hover:ring-2 hover:ring-primary/30 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
-                {brand.logo_url ? (
-                  <img src={brand.logo_url} alt={brand.name} className="max-h-12 max-w-[78%] object-contain" loading="lazy" />
+                {(BRAND_LOGO_PATHS[brand.slug] || brand.logo_url) ? (
+                  <img src={BRAND_LOGO_PATHS[brand.slug] || brand.logo_url || undefined} alt={brand.name} className="max-h-12 max-w-[78%] object-contain" loading="lazy" />
                 ) : (
                   <span className="text-xl md:text-2xl font-semibold text-foreground text-center">{brand.name}</span>
                 )}
