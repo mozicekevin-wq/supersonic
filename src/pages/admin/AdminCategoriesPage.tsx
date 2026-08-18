@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, Upload, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { getCategories, createCategory, updateCategory, deleteCategory, getBrands, createBrand, updateBrand, deleteBrand } from '@/services/categories';
+import { getCategories, createCategory, updateCategory, deleteCategory, getBrands, createBrand, updateBrand, deleteBrand, uploadBrandLogo } from '@/services/categories';
 import { slugify } from '@/lib/utils';
 import type { Category, Brand } from '@/types/types';
 
@@ -16,7 +16,9 @@ export default function AdminCategoriesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; type: 'cat' | 'brand' } | null>(null);
   const [editItem, setEditItem] = useState<Category | Brand | null>(null);
-  const [form, setForm] = useState({ name: '', description: '', slug: '' });
+  const [form, setForm] = useState({ name: '', description: '', slug: '', logoUrl: '' });
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState('');
 
   const load = async () => {
     setLoading(true);
@@ -29,11 +31,27 @@ export default function AdminCategoriesPage() {
 
   useEffect(() => { load(); }, []);
 
-  const openCreate = () => { setEditItem(null); setForm({ name: '', description: '', slug: '' }); setDialogOpen(true); };
+  const resetLogo = () => { setLogoFile(null); setLogoPreview(''); };
+  const openCreate = () => {
+    setEditItem(null);
+    setForm({ name: '', description: '', slug: '', logoUrl: '' });
+    resetLogo();
+    setDialogOpen(true);
+  };
   const openEdit = (item: Category | Brand) => {
     setEditItem(item);
-    setForm({ name: item.name, description: item.description || '', slug: item.slug });
+    setForm({ name: item.name, description: item.description || '', slug: item.slug, logoUrl: 'logo_url' in item ? (item.logo_url || '') : '' });
+    setLogoFile(null);
+    setLogoPreview('logo_url' in item ? (item.logo_url || '') : '');
     setDialogOpen(true);
+  };
+
+  const handleLogoChange = (file?: File) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { toast.error('Sélectionnez une image'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error('L’image doit faire moins de 5 Mo'); return; }
+    setLogoFile(file);
+    setLogoPreview(URL.createObjectURL(file));
   };
 
   const handleSave = async () => {
@@ -45,10 +63,15 @@ export default function AdminCategoriesPage() {
         if (editItem) await updateCategory(editItem.id, data);
         else await createCategory(data);
       } else {
-        if (editItem) await updateBrand(editItem.id, data);
-        else await createBrand(data);
+        const savedBrand = editItem
+          ? (await updateBrand(editItem.id, data), editItem as Brand)
+          : await createBrand(data);
+        if (logoFile) {
+          const logoUrl = await uploadBrandLogo(logoFile, savedBrand.id);
+          await updateBrand(savedBrand.id, { logo_url: logoUrl });
+        }
       }
-      toast.success(editItem ? 'Mis à jour' : 'Créé');
+      toast.success(editItem ? 'Marque mise à jour' : 'Marque créée');
       setDialogOpen(false); load();
     } catch (e: any) { toast.error(e.message || 'Erreur'); }
     finally { setSaving(false); }
@@ -147,6 +170,22 @@ export default function AdminCategoriesPage() {
               <label className="text-xs font-medium text-muted-foreground mb-1 block">Description</label>
               <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} className="neu-input text-sm resize-none" placeholder="Description optionnelle" />
             </div>
+            {tab === 'brands' && (
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Logo de la marque</label>
+                <div className="flex items-center gap-3">
+                  <div className="w-20 h-16 rounded-xl border border-border bg-muted/30 flex items-center justify-center overflow-hidden">
+                    {logoPreview ? <img src={logoPreview} alt="Aperçu du logo" className="max-w-[85%] max-h-[75%] object-contain" /> : <ImageIcon className="w-6 h-6 text-muted-foreground" />}
+                  </div>
+                  <label className="neu-btn flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
+                    <Upload className="w-4 h-4" />
+                    {logoFile ? 'Changer l’image' : 'Ajouter une image'}
+                    <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="sr-only" onChange={e => handleLogoChange(e.target.files?.[0])} />
+                  </label>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1">PNG, JPG, WEBP ou SVG, 5 Mo maximum. Le logo apparaîtra sur le bouton public.</p>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <button onClick={() => setDialogOpen(false)} className="neu-btn px-4 py-2 text-sm">Annuler</button>

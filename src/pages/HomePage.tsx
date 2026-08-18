@@ -344,8 +344,8 @@ export default function HomePage() {
                 title={`Voir uniquement les produits ${brand.name}`}
                 className="neu-flat min-h-24 md:min-h-28 rounded-2xl px-6 py-5 flex items-center justify-center hover:-translate-y-1 hover:ring-2 hover:ring-primary/30 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
-                {(BRAND_LOGO_PATHS[brand.slug] || brand.logo_url) ? (
-                  <img src={BRAND_LOGO_PATHS[brand.slug] || brand.logo_url || undefined} alt={brand.name} className="max-h-12 max-w-[78%] object-contain" loading="lazy" />
+                {(brand.logo_url || BRAND_LOGO_PATHS[brand.slug]) ? (
+                  <img src={brand.logo_url || BRAND_LOGO_PATHS[brand.slug]} alt={brand.name} className="max-h-12 max-w-[78%] object-contain" loading="lazy" />
                 ) : (
                   <span className="text-xl md:text-2xl font-semibold text-foreground text-center">{brand.name}</span>
                 )}

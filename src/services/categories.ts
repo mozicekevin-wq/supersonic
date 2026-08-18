@@ -34,9 +34,10 @@ export async function deleteCategory(id: string) {
   const { error } = await supabase.from('categories').delete().eq('id', id);
   if (error) throw error;
 }
-export async function createBrand(brand: Partial<Brand>) {
-  const { error } = await supabase.from('brands').insert(brand as never);
+export async function createBrand(brand: Partial<Brand>): Promise<Brand> {
+  const { data, error } = await supabase.from('brands').insert(brand as never).select('*').single();
   if (error) throw error;
+  return data as Brand;
 }
 export async function updateBrand(id: string, updates: Partial<Brand>) {
   const { error } = await supabase.from('brands').update(updates as never).eq('id', id);
