@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, Loader2, Upload, Image as ImageIcon } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, Upload, Image as ImageIcon, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -19,6 +19,7 @@ export default function AdminCategoriesPage() {
   const [form, setForm] = useState({ name: '', description: '', slug: '', logoUrl: '' });
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState('');
+  const [brandSearch, setBrandSearch] = useState('');
 
   const load = async () => {
     setLoading(true);
@@ -106,6 +107,9 @@ export default function AdminCategoriesPage() {
   };
 
   const items = tab === 'categories' ? categories : brands;
+  const filteredItems = tab === 'brands' && brandSearch.trim()
+    ? brands.filter(brand => [brand.name, brand.slug, brand.description || ''].some(value => value.toLowerCase().includes(brandSearch.trim().toLowerCase())))
+    : items;
   const typeLabel = tab === 'categories' ? 'catégorie' : 'marque';
 
   return (
@@ -121,7 +125,7 @@ export default function AdminCategoriesPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {(['categories', 'brands'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${tab === t ? 'bg-primary text-white shadow-md' : 'neu-btn'}`}>
@@ -129,6 +133,19 @@ export default function AdminCategoriesPage() {
           </button>
         ))}
       </div>
+
+      {tab === 'brands' && (
+        <div className="relative max-w-xl">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            value={brandSearch}
+            onChange={e => setBrandSearch(e.target.value)}
+            className="neu-input text-sm pl-9 pr-4"
+            placeholder="Rechercher une marque par nom ou slug..."
+            aria-label="Rechercher une marque"
+          />
+        </div>
+      )}
 
       <div className="neu-card overflow-hidden">
         <div className="overflow-x-auto">
@@ -144,9 +161,9 @@ export default function AdminCategoriesPage() {
             <tbody>
               {loading ? Array(5).fill(0).map((_, i) => (
                 <tr key={i}><td colSpan={4} className="py-3 px-4"><div className="h-8 bg-muted rounded animate-pulse" /></td></tr>
-              )) : items.length === 0 ? (
-                <tr><td colSpan={4} className="text-center py-10 text-muted-foreground">Aucun élément</td></tr>
-              ) : items.map(item => (
+              )              ) : filteredItems.length === 0 ? (
+                <tr><td colSpan={4} className="text-center py-10 text-muted-foreground">{tab === 'brands' && brandSearch ? 'Aucune marque trouvée' : 'Aucun élément'}</td></tr>
+              ) : filteredItems.map(item => (
                 <tr key={item.id} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
                   <td className="py-2.5 px-4 font-medium whitespace-nowrap">{item.name}</td>
                   <td className="py-2.5 px-4 text-muted-foreground font-mono text-xs whitespace-nowrap">{item.slug}</td>
