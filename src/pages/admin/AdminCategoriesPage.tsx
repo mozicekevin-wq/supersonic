@@ -211,46 +211,48 @@ export default function AdminCategoriesPage() {
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-[calc(100%-2rem)] md:max-w-md">
+        <DialogContent className="w-[calc(100vw-1.5rem)] max-w-md max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>{editItem ? `Modifier la ${typeLabel}` : `Nouvelle ${typeLabel}`}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-2">
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1 block">Nom *</label>
-              <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value, slug: slugify(e.target.value) }))} className="neu-input text-sm" placeholder="Nom" />
+              <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value, slug: slugify(e.target.value) }))} className="neu-input text-sm w-full min-w-0 box-border" placeholder="Nom" />
             </div>
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1 block">Slug</label>
-              <input value={form.slug} onChange={e => setForm(f => ({ ...f, slug: e.target.value }))} className="neu-input text-sm font-mono" placeholder="Auto-généré" />
+              <input value={form.slug} onChange={e => setForm(f => ({ ...f, slug: e.target.value }))} className="neu-input text-sm font-mono w-full min-w-0 box-border" placeholder="Auto-généré" />
             </div>
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1 block">Description</label>
-              <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} className="neu-input text-sm resize-none" placeholder="Description optionnelle" />
+              <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} className="neu-input text-sm resize-none w-full min-w-0 box-border" placeholder="Description optionnelle" />
             </div>
             {tab === 'brands' && (
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Logo de la marque</label>
-                <div className="flex items-center gap-3">
-                  <div className="w-20 h-16 rounded-xl border border-border bg-muted/30 flex items-center justify-center overflow-hidden">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 min-w-0">
+                  <div className="w-full sm:w-20 h-20 sm:h-16 rounded-xl border border-border bg-muted/30 flex items-center justify-center overflow-hidden shrink-0">
                     {logoPreview ? <img src={logoPreview} alt="Aperçu du logo" className="max-w-[85%] max-h-[75%] object-contain" /> : <ImageIcon className="w-6 h-6 text-muted-foreground" />}
                   </div>
-                  <label className="neu-btn flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
-                    <Upload className="w-4 h-4" />
-                    {logoFile ? 'Changer l’image' : 'Depuis le téléphone'}
-                    <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="sr-only" onChange={e => handleLogoChange(e.target.files?.[0])} />
-                  </label>
-                  <button type="button" onClick={openGallery} className="neu-btn flex items-center gap-2 px-3 py-2 text-sm">
-                    <Images className="w-4 h-4" /> Galerie du site
-                  </button>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 flex-1 min-w-0">
+                    <label className="neu-btn flex items-center justify-center gap-2 px-3 py-3 text-sm cursor-pointer text-center min-w-0">
+                      <Upload className="w-4 h-4 shrink-0" />
+                      <span className="break-words">{logoFile ? 'Changer l’image' : 'Depuis le téléphone'}</span>
+                      <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="sr-only" onChange={e => handleLogoChange(e.target.files?.[0])} />
+                    </label>
+                    <button type="button" onClick={openGallery} className="neu-btn flex items-center justify-center gap-2 px-3 py-3 text-sm min-w-0">
+                      <Images className="w-4 h-4 shrink-0" /> <span className="break-words">Galerie du site</span>
+                    </button>
+                  </div>
                 </div>
                 <p className="text-[11px] text-muted-foreground mt-1">Choisissez une image du téléphone ou réutilisez une image déjà hébergée dans la galerie du site.</p>
               </div>
             )}
           </div>
-          <DialogFooter>
-            <button onClick={() => setDialogOpen(false)} className="neu-btn px-4 py-2 text-sm">Annuler</button>
-            <button onClick={handleSave} disabled={saving} className="neu-btn-primary flex items-center gap-2 px-4 py-2 text-sm">
+          <DialogFooter className="w-full flex-col-reverse sm:flex-row gap-2">
+            <button type="button" onClick={() => setDialogOpen(false)} className="neu-btn w-full sm:w-auto px-4 py-2 text-sm">Annuler</button>
+            <button type="button" onClick={handleSave} disabled={saving} className="neu-btn-primary w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 text-sm">
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
               {editItem ? 'Mettre à jour' : 'Créer'}
             </button>
