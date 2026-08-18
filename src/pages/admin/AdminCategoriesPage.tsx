@@ -57,24 +57,21 @@ export default function AdminCategoriesPage() {
   const handleSave = async () => {
     if (!form.name) { toast.error('Le nom est requis'); return; }
     setSaving(true);
-    const data = { name: form.name, slug: form.slug || slugify(form.name), description: form.description || null };
+    const data = { name: form.name.trim(), slug: slugify(form.slug || form.name), description: form.description.trim() || null };
     try {
       if (tab === 'categories') {
         if (editItem) await updateCategory(editItem.id, data);
         else await createCategory(data);
       } else {
-        const existingBrand = !editItem
-          ? brands.find(b => b.name.trim().toLowerCase() === data.name.trim().toLowerCase() || b.slug === data.slug)
-          : null;
-
-        if (existingBrand) {
+        const conflictingBrand = brands.find(b => b.id !== editItem?.id && (b.name.trim().toLowerCase() === data.name.toLowerCase() || b.slug === data.slug));
+        if (conflictingBrand) {
           if (!logoFile) {
-            toast.error(`La marque « ${existingBrand.name} » existe déjà. Choisissez une image pour mettre son logo à jour.`);
+            toast.error(`La marque « ${conflictingBrand.name} » existe déjà. Ouvrez-la avec Modifier pour mettre son logo à jour.`);
             return;
           }
-          const logoUrl = await uploadBrandLogo(logoFile, existingBrand.id);
-          await updateBrand(existingBrand.id, { logo_url: logoUrl, description: data.description });
-          toast.success(`Logo de ${existingBrand.name} mis à jour`);
+          const logoUrl = await uploadBrandLogo(logoFile, conflictingBrand.id);
+          await updateBrand(conflictingBrand.id, { logo_url: logoUrl });
+          toast.success(`Logo de ${conflictingBrand.name} mis à jour`);
         } else {
           const savedBrand = editItem
             ? (await updateBrand(editItem.id, data), editItem as Brand)
