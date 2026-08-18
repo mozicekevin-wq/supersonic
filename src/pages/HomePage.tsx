@@ -357,7 +357,7 @@ export default function HomePage() {
             {brands.map(brand => (
               <Link
                 key={brand.id}
-                to={`/products?brand_id=${encodeURIComponent(brand.id)}`}
+                to={`/products?brand=${encodeURIComponent(brand.slug)}&brand_id=${encodeURIComponent(brand.id)}`}
                 aria-label={`Voir uniquement les produits ${brand.name}`}
                 title={`Voir uniquement les produits ${brand.name}`}
                 className="neu-flat min-h-24 md:min-h-28 rounded-2xl px-6 py-5 flex items-center justify-center hover:-translate-y-1 hover:ring-2 hover:ring-primary/30 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"

@@ -43,16 +43,22 @@ export default function ProductsPage() {
     getBrands().then(setBrands).catch(() => {});
   }, []);
 
-  // Resolve category slug→id from URL
+  // Resolve category/brand values from URL before fetching results.
   useEffect(() => {
     const catSlug = searchParams.get('category');
     const brandSlug = searchParams.get('brand');
     const brandId = searchParams.get('brand_id');
+    const resolvedCategoryId = catSlug ? (categories.find(c => c.slug === catSlug)?.id || '') : '';
+    const resolvedBrandId = brandId || (brandSlug ? (brands.find(b => b.slug === brandSlug)?.id || '') : '');
+    const waitingForBrandResolution = !!brandSlug && !brandId && brands.length > 0 && !resolvedBrandId;
+
+    if (waitingForBrandResolution) return;
+
     setFilters(f => ({
       ...f,
       search: searchParams.get('search') || '',
-      category_id: catSlug ? (categories.find(c => c.slug === catSlug)?.id || '') : '',
-      brand_id: brandId || (brandSlug ? (brands.find(b => b.slug === brandSlug)?.id || '') : ''),
+      category_id: resolvedCategoryId,
+      brand_id: resolvedBrandId,
     }));
     setPage(1);
   }, [searchParams, categories, brands]);
@@ -81,6 +87,7 @@ export default function ProductsPage() {
   };
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
+  const selectedBrand = brands.find(brand => brand.id === filters.brand_id);
   const hasFilters = !!(filters.search || filters.category_id || filters.brand_id || filters.in_stock || filters.is_promotion || filters.min_price || filters.max_price);
 
   const FilterPanel = () => (
@@ -147,8 +154,12 @@ export default function ProductsPage() {
       {/* Header */}
       <div className="bg-primary py-10 px-4">
         <div className="max-w-6xl mx-auto">
-          <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">Notre Catalogue</h1>
-          <p className="text-white/70">Électronique • Électroménager • Informatique • Mobilier • Bureautique</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
+            {selectedBrand ? `Produits ${selectedBrand.name}` : 'Notre Catalogue'}
+          </h1>
+          <p className="text-white/70">
+            {selectedBrand ? `Découvrez uniquement les produits disponibles de la marque ${selectedBrand.name}.` : 'Électronique • Électroménager • Informatique • Mobilier • Bureautique'}
+          </p>
         </div>
       </div>
 
