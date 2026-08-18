@@ -1,0 +1,175 @@
+import { useState, useEffect } from 'react';
+import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { getCategories, createCategory, updateCategory, deleteCategory, getBrands, createBrand, updateBrand, deleteBrand } from '@/services/categories';
+import { slugify } from '@/lib/utils';
+import type { Category, Brand } from '@/types/types';
+
+export default function AdminCategoriesPage() {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [tab, setTab] = useState<'categories' | 'brands'>('categories');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; type: 'cat' | 'brand' } | null>(null);
+  const [editItem, setEditItem] = useState<Category | Brand | null>(null);
+  const [form, setForm] = useState({ name: '', description: '', slug: '' });
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const [cats, brnds] = await Promise.all([getCategories(), getBrands()]);
+      setCategories(cats); setBrands(brnds);
+    } catch { toast.error('Erreur de chargement'); }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const openCreate = () => { setEditItem(null); setForm({ name: '', description: '', slug: '' }); setDialogOpen(true); };
+  const openEdit = (item: Category | Brand) => {
+    setEditItem(item);
+    setForm({ name: item.name, description: item.description || '', slug: item.slug });
+    setDialogOpen(true);
+  };
+
+  const handleSave = async () => {
+    if (!form.name) { toast.error('Le nom est requis'); return; }
+    setSaving(true);
+    const data = { name: form.name, slug: form.slug || slugify(form.name), description: form.description || null };
+    try {
+      if (tab === 'categories') {
+        if (editItem) await updateCategory(editItem.id, data);
+        else await createCategory(data);
+      } else {
+        if (editItem) await updateBrand(editItem.id, data);
+        else await createBrand(data);
+      }
+      toast.success(editItem ? 'Mis à jour' : 'Créé');
+      setDialogOpen(false); load();
+    } catch (e: any) { toast.error(e.message || 'Erreur'); }
+    finally { setSaving(false); }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      if (deleteTarget.type === 'cat') await deleteCategory(deleteTarget.id);
+      else await deleteBrand(deleteTarget.id);
+      toast.success('Supprimé');
+      load();
+    } catch (e: any) { toast.error(e.message?.includes('foreign key') ? 'Impossible: des produits utilisent cet élément' : 'Erreur'); }
+    finally { setDeleteTarget(null); }
+  };
+
+  const items = tab === 'categories' ? categories : brands;
+  const typeLabel = tab === 'categories' ? 'catégorie' : 'marque';
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold">Catégories &amp; Marques</h1>
+          <p className="text-sm text-muted-foreground">Gérez les catégories de produits et les marques</p>
+        </div>
+        <button onClick={openCreate} className="neu-btn-primary flex items-center gap-2 px-4 py-2.5 text-sm">
+          <Plus className="w-4 h-4" /> Ajouter
+        </button>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-2">
+        {(['categories', 'brands'] as const).map(t => (
+          <button key={t} onClick={() => setTab(t)}
+            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${tab === t ? 'bg-primary text-white shadow-md' : 'neu-btn'}`}>
+            {t === 'categories' ? `Catégories (${categories.length})` : `Marques (${brands.length})`}
+          </button>
+        ))}
+      </div>
+
+      <div className="neu-card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-max text-sm">
+            <thead className="border-b border-border bg-muted/30">
+              <tr>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground">Nom</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground">Slug</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground">Description</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? Array(5).fill(0).map((_, i) => (
+                <tr key={i}><td colSpan={4} className="py-3 px-4"><div className="h-8 bg-muted rounded animate-pulse" /></td></tr>
+              )) : items.length === 0 ? (
+                <tr><td colSpan={4} className="text-center py-10 text-muted-foreground">Aucun élément</td></tr>
+              ) : items.map(item => (
+                <tr key={item.id} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
+                  <td className="py-2.5 px-4 font-medium whitespace-nowrap">{item.name}</td>
+                  <td className="py-2.5 px-4 text-muted-foreground font-mono text-xs whitespace-nowrap">{item.slug}</td>
+                  <td className="py-2.5 px-4 text-muted-foreground max-w-xs truncate whitespace-nowrap">{item.description || '—'}</td>
+                  <td className="py-2.5 px-4 whitespace-nowrap">
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => openEdit(item)} className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-primary">
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => setDeleteTarget({ id: item.id, type: tab === 'categories' ? 'cat' : 'brand' })}
+                        className="p-1.5 rounded-lg hover:bg-red-50 transition-colors text-muted-foreground hover:text-red-600">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-[calc(100%-2rem)] md:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editItem ? `Modifier la ${typeLabel}` : `Nouvelle ${typeLabel}`}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Nom *</label>
+              <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value, slug: slugify(e.target.value) }))} className="neu-input text-sm" placeholder="Nom" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Slug</label>
+              <input value={form.slug} onChange={e => setForm(f => ({ ...f, slug: e.target.value }))} className="neu-input text-sm font-mono" placeholder="Auto-généré" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Description</label>
+              <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} className="neu-input text-sm resize-none" placeholder="Description optionnelle" />
+            </div>
+          </div>
+          <DialogFooter>
+            <button onClick={() => setDialogOpen(false)} className="neu-btn px-4 py-2 text-sm">Annuler</button>
+            <button onClick={handleSave} disabled={saving} className="neu-btn-primary flex items-center gap-2 px-4 py-2 text-sm">
+              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+              {editItem ? 'Mettre à jour' : 'Créer'}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={open => !open && setDeleteTarget(null)}>
+        <AlertDialogContent className="max-w-[calc(100%-2rem)] md:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer cet élément?</AlertDialogTitle>
+            <AlertDialogDescription>Impossible si des produits utilisent cet élément.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Supprimer</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
