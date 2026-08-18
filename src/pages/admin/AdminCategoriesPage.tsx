@@ -3,7 +3,7 @@ import { Plus, Pencil, Trash2, Loader2, Upload, Image as ImageIcon, Search, Imag
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { getCategories, createCategory, updateCategory, deleteCategory, getBrands, createBrand, updateBrand, deleteBrand, uploadBrandGalleryImage, listBrandGallery } from '@/services/categories';
+import { getCategories, createCategory, updateCategory, deleteCategory, getBrands, createBrand, updateBrand, deleteBrand, uploadBrandGalleryImage, uploadCategoryImage, listBrandGallery } from '@/services/categories';
 import { slugify } from '@/lib/utils';
 import type { Category, Brand } from '@/types/types';
 
@@ -19,6 +19,8 @@ export default function AdminCategoriesPage() {
   const [form, setForm] = useState({ name: '', description: '', slug: '', logoUrl: '' });
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState('');
+  const [categoryImageFile, setCategoryImageFile] = useState<File | null>(null);
+  const [categoryImagePreview, setCategoryImagePreview] = useState('');
   const [brandSearch, setBrandSearch] = useState('');
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
@@ -37,6 +39,7 @@ export default function AdminCategoriesPage() {
   useEffect(() => { load(); }, []);
 
   const resetLogo = () => { setLogoFile(null); setLogoPreview(''); setSelectedGalleryLogo(''); };
+  const resetCategoryImage = () => { setCategoryImageFile(null); setCategoryImagePreview(''); };
   const openGallery = async () => {
     setGalleryOpen(true);
     setGalleryLoading(true);
@@ -59,6 +62,7 @@ export default function AdminCategoriesPage() {
     setEditItem(null);
     setForm({ name: '', description: '', slug: '', logoUrl: '' });
     resetLogo();
+    resetCategoryImage();
     setDialogOpen(true);
   };
   const openEdit = (item: Category | Brand) => {
@@ -66,6 +70,8 @@ export default function AdminCategoriesPage() {
     setForm({ name: item.name, description: item.description || '', slug: item.slug, logoUrl: 'logo_url' in item ? (item.logo_url || '') : '' });
     setLogoFile(null);
     setLogoPreview('logo_url' in item ? (item.logo_url || '') : '');
+    setCategoryImageFile(null);
+    setCategoryImagePreview('image_url' in item ? (item.image_url || '') : '');
     setDialogOpen(true);
   };
 
@@ -79,14 +85,27 @@ export default function AdminCategoriesPage() {
     setLogoPreview(URL.createObjectURL(file));
   };
 
+  const handleCategoryImageChange = (file?: File) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { toast.error('Sélectionnez une image'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error('L’image doit faire moins de 5 Mo'); return; }
+    setCategoryImageFile(file);
+    setCategoryImagePreview(URL.createObjectURL(file));
+  };
+
   const handleSave = async () => {
     if (!form.name) { toast.error('Le nom est requis'); return; }
     setSaving(true);
     const data = { name: form.name.trim(), slug: slugify(form.slug || form.name), description: form.description.trim() || null };
     try {
       if (tab === 'categories') {
-        if (editItem) await updateCategory(editItem.id, data);
-        else await createCategory(data);
+        const savedCategory = editItem
+          ? (await updateCategory(editItem.id, data), { ...editItem, ...data } as Category)
+          : await createCategory(data);
+        if (categoryImageFile) {
+          const imageUrl = await uploadCategoryImage(categoryImageFile, savedCategory.id);
+          await updateCategory(savedCategory.id, { image_url: imageUrl });
+        }
       } else {
         const conflictingBrand = brands.find(b => b.id !== editItem?.id && (b.name.trim().toLowerCase() === data.name.toLowerCase() || b.slug === data.slug));
         if (conflictingBrand) {
@@ -228,6 +247,24 @@ export default function AdminCategoriesPage() {
               <label className="text-xs font-medium text-muted-foreground mb-1 block">Description</label>
               <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} className="neu-input text-sm resize-none w-full min-w-0 box-border" placeholder="Description optionnelle" />
             </div>
+            {tab === 'categories' && (
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Image réaliste de la catégorie</label>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 min-w-0">
+                  <div className="w-full sm:w-24 h-24 sm:h-20 rounded-xl border border-border bg-white flex items-center justify-center overflow-hidden shrink-0">
+                    {categoryImagePreview
+                      ? <img src={categoryImagePreview} alt="Aperçu de la catégorie" className="w-full h-full object-contain" />
+                      : <ImageIcon className="w-6 h-6 text-muted-foreground" />}
+                  </div>
+                  <label className="neu-btn flex items-center justify-center gap-2 px-3 py-3 text-sm cursor-pointer text-center min-w-0">
+                    <Upload className="w-4 h-4 shrink-0" />
+                    <span className="break-words">{categoryImageFile ? 'Changer l’image' : 'Depuis le téléphone'}</span>
+                    <input type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" onChange={e => handleCategoryImageChange(e.target.files?.[0])} />
+                  </label>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1">L’image sera affichée sur la carte de la catégorie. Si vous ne choisissez rien, une image réaliste par défaut sera utilisée.</p>
+              </div>
+            )}
             {tab === 'brands' && (
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Logo de la marque</label>

@@ -53,10 +53,17 @@ const HERO_SLIDES = [
   },
 ];
 
-const CATEGORY_ICONS: Record<string, string> = {
-  electronique: '📱', electromenager: '🏠', mobilier: '🪑',
-  informatique: '💻', bureautique: '🖨️',
+const CATEGORY_IMAGE_PATHS: Record<string, string> = {
+  electronique: '/supersonic/categories/electronique.jpg',
+  electromenager: '/supersonic/categories/electromenager.jpg',
+  mobilier: '/supersonic/categories/mobilier.jpg',
+  informatique: '/supersonic/categories/informatique.jpg',
+  bureautique: '/supersonic/categories/bureautique.jpg',
 };
+
+function getCategoryImage(category: Category): string {
+  return category.image_url || CATEGORY_IMAGE_PATHS[category.slug] || CATEGORY_IMAGE_PATHS.electronique;
+}
 
 export default function HomePage() {
   const [featured, setFeatured] = useState<Product[]>([]);
@@ -232,9 +239,19 @@ export default function HomePage() {
               </div>
             )) : categories.map(cat => (
               <Link key={cat.id} to={`/products?category=${cat.slug}`}
-                className="neu-card p-6 text-center cursor-pointer group">
-                <div className="text-3xl mb-3">{CATEGORY_ICONS[cat.slug] || '📦'}</div>
-                <div className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors">
+                className="neu-card p-3 sm:p-4 text-center cursor-pointer group hover:-translate-y-1 transition-transform duration-200">
+                <div className="h-32 sm:h-40 md:h-44 rounded-xl overflow-hidden bg-white mb-3 flex items-center justify-center">
+                  <img
+                    src={getCategoryImage(cat)}
+                    alt={cat.name}
+                    loading="lazy"
+                    className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
+                    onError={event => {
+                      event.currentTarget.src = CATEGORY_IMAGE_PATHS.electronique;
+                    }}
+                  />
+                </div>
+                <div className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors line-clamp-2">
                   {cat.name}
                 </div>
                 {cat.description && (

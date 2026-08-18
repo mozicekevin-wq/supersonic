@@ -22,9 +22,22 @@ export async function getBrands(): Promise<Brand[]> {
 }
 
 // Admin
-export async function createCategory(cat: Partial<Category>) {
-  const { error } = await supabase.from('categories').insert(cat as never);
+export async function createCategory(cat: Partial<Category>): Promise<Category> {
+  const { data, error } = await supabase.from('categories').insert(cat as never).select('*').single();
   if (error) throw error;
+  return data as Category;
+}
+
+export async function uploadCategoryImage(file: File, categoryId: string): Promise<string> {
+  const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+  const fileName = `categories/${categoryId}-${Date.now()}.${ext}`;
+  const { data, error } = await supabase.storage.from('brands').upload(fileName, file, {
+    contentType: file.type,
+    upsert: false,
+  });
+  if (error) throw error;
+  const { data: urlData } = supabase.storage.from('brands').getPublicUrl(data.path);
+  return urlData.publicUrl;
 }
 export async function updateCategory(id: string, updates: Partial<Category>) {
   const { error } = await supabase.from('categories').update(updates as never).eq('id', id);
