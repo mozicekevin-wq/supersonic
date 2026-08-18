@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Phone, Mail, MapPin, MessageCircle, Send, Loader2 } from 'lucide-react';
+import { Phone, Mail, MapPin, Send, Loader2 } from 'lucide-react';
 import { supabase } from '@/db/supabase';
+import WhatsAppLogo from '@/components/common/WhatsAppLogo';
 import { toast } from 'sonner';
 
 export default function ContactPage() {
@@ -59,7 +60,7 @@ export default function ContactPage() {
           </div>
           <a href="https://wa.me/242069999999" target="_blank" rel="noreferrer"
             className="w-full py-3 rounded-xl bg-green-500 text-white font-semibold flex items-center justify-center gap-2 hover:bg-green-600 transition-colors">
-            <MessageCircle className="w-5 h-5" /> Contacter sur WhatsApp
+            <WhatsAppLogo className="w-5 h-5" /> Contacter sur WhatsApp
           </a>
           <div className="neu-card p-5">
             <h3 className="font-semibold mb-3">Horaires d'ouverture</h3>

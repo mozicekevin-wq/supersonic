@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { MapPin, Phone, Mail, Clock } from 'lucide-react';
 import { getStores } from '@/services/admin';
+import WhatsAppLogo from '@/components/common/WhatsAppLogo';
 import type { Store } from '@/types/types';
 
 export default function StoresPage() {
@@ -85,7 +86,7 @@ export default function StoresPage() {
                   <a href={`https://wa.me/242069999999?text=Bonjour, je voudrais visiter votre magasin de ${store.city}`}
                     target="_blank" rel="noreferrer"
                     className="mt-4 w-full py-2.5 rounded-xl bg-green-500 text-white font-semibold flex items-center justify-center gap-2 text-sm hover:bg-green-600 transition-colors">
-                    <Phone className="w-4 h-4" /> Contacter ce magasin
+                    <WhatsAppLogo className="w-5 h-5" /> Contacter ce magasin
                   </a>
                 </div>
               ))}

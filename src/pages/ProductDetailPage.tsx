@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ChevronLeft, ShoppingBag, Phone, MessageCircle, Shield, Package, Star, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ShoppingBag, Phone, Shield, Package, Star, ChevronRight } from 'lucide-react';
 import { getProductBySlug, getSimilarProducts } from '@/services/products';
 import { formatPrice, getPrimaryImage } from '@/lib/utils';
 import ProductCard from '@/components/products/ProductCard';
+import WhatsAppLogo from '@/components/common/WhatsAppLogo';
 import OrderModal from '@/components/products/OrderModal';
 import type { Product } from '@/types/types';
 
@@ -155,7 +156,7 @@ export default function ProductDetailPage() {
               </button>
               <button onClick={handleWhatsApp}
                 className="flex-1 py-3 rounded-xl bg-green-500 text-white font-semibold flex items-center justify-center gap-2 hover:bg-green-600 transition-colors text-base">
-                <MessageCircle className="w-5 h-5" /> Contacter Supersonic
+                <WhatsAppLogo className="w-5 h-5" /> Contacter Supersonic
               </button>
             </div>
             <a href="tel:+242069999999"

@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Phone, Mail, MapPin, Facebook, Instagram, Youtube, Clock } from 'lucide-react';
+import WhatsAppLogo from '@/components/common/WhatsAppLogo';
 
 const LOGO_URL = 'https://miaoda-conversation-file.s3cdn.medo.dev/user-dg06phmgr9c0/app-dsazr1cm25tt/20260817/file_00000000971482438d70a20248281418.png';
 
@@ -36,7 +37,7 @@ export default function Footer() {
           <div className="flex gap-3">
             <a href="https://wa.me/242069999999" target="_blank" rel="noreferrer"
               className="neu-btn-primary text-sm px-5 py-2.5 flex items-center gap-2">
-              <Phone className="w-4 h-4" /> WhatsApp
+              <WhatsAppLogo className="w-5 h-5" /> WhatsApp
             </a>
             <Link to="/products" className="px-5 py-2.5 rounded-xl border border-white/40 text-white text-sm font-semibold hover:bg-white/10 transition-colors">
               Voir les produits

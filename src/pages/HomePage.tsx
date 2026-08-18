@@ -6,6 +6,7 @@ import { getActivePromotions } from '@/services/promotions';
 import { getCategories, getBrands } from '@/services/categories';
 import { getPublishedPublications } from '@/services/publications';
 import { getStores } from '@/services/admin';
+import WhatsAppLogo from '@/components/common/WhatsAppLogo';
 import ProductCard from '@/components/products/ProductCard';
 import ProductCardSkeleton from '@/components/products/ProductCardSkeleton';
 import { formatPrice, formatDate } from '@/lib/utils';
@@ -481,7 +482,7 @@ export default function HomePage() {
           <div className="flex flex-wrap gap-3 justify-center">
             <a href="https://wa.me/242069999999" target="_blank" rel="noreferrer"
               className="neu-btn-accent flex items-center gap-2 px-6 py-3">
-              <Phone className="w-4 h-4" /> WhatsApp
+              <WhatsAppLogo className="w-5 h-5" /> WhatsApp
             </a>
             <Link to="/contact" className="neu-btn flex items-center gap-2 px-6 py-3">
               Formulaire de contact
